@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Canteen Hero — Swift Student Challenge 2026
 
 > Learn money. One coin at a time.
@@ -50,3 +51,6 @@ True to Apple's values, all data stays on-device. The AI hint system uses Founda
 I tested early builds with children ages 6–10. Their feedback directly shaped the design: removing jargon, enlarging tap targets, adding voice narration, and adjusting difficulty so both a first-grader and a fourth-grader find their own challenge. Building for children taught me that simplicity is harder than complexity — every interaction needed to be intuitive for a 6-year-old while remaining educational.
 
 Financial literacy starts young — studies show children form money habits by age 7. Canteen Hero makes that critical learning window engaging and accessible, regardless of background or ability.
+=======
+# Swift-Student-Challenge-2026-Submission-
+>>>>>>> 67b4ba2cfe70843e159c43afa5b39b49647fc4f8
