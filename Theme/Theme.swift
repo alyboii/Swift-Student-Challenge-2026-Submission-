@@ -1,50 +1,38 @@
 import SwiftUI
 
-// MARK: - 🎨 Canteen Colors
+// MARK: - Colors
 
 extension Color {
-    // Primary Colors
-    /// Simit Yellow — Primary: buttons, headings, focal points (vibrant in both modes)
     static let simitSarisi = Color(red: 0.96, green: 0.65, blue: 0.14)       // #F5A623
-    /// Toast Orange — Secondary: accents, badges, icons (vibrant in both modes)
     static let tostTuruncusu = Color(red: 0.91, green: 0.45, blue: 0.16)     // #E8722A
-    /// Ayran White — Warm background tone (adapts to dark mode)
     static let ayranBeyazi = Color(
         uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0.12, green: 0.10, blue: 0.08, alpha: 1)  // Dark warm brown
-                : UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1)  // Light warm white
+                ? UIColor(red: 0.12, green: 0.10, blue: 0.08, alpha: 1)
+                : UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1)
         }
     )
-    /// Chocolate Brown — Text color (adapts to dark mode)
     static let cikolataKahvesi = Color(
         uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark
-                ? UIColor(red: 0.95, green: 0.90, blue: 0.85, alpha: 1)  // Light cream text
-                : UIColor(red: 0.36, green: 0.24, blue: 0.18, alpha: 1)  // Dark brown text
+                ? UIColor(red: 0.95, green: 0.90, blue: 0.85, alpha: 1)
+                : UIColor(red: 0.36, green: 0.24, blue: 0.18, alpha: 1)
         }
     )
 
-    // Utility Colors
-    /// Success states, correct answer
     static let basariYesili = Color(red: 0.30, green: 0.69, blue: 0.31)      // #4CAF50
-    /// Error states, wrong answer
     static let hataKirmizisi = Color(red: 0.90, green: 0.22, blue: 0.21)     // #E53935
 
-    // MARK: - Apple Pride Colors
-    // Apple celebrates Pride annually with products, Watch bands, and wallpapers.
-    // Each achievement has a distinct colour from the Pride palette.
-    static let prideRed    = Color(red: 1.00, green: 0.23, blue: 0.19)  // #FF3B30
-    static let prideOrange = Color(red: 1.00, green: 0.58, blue: 0.00)  // #FF9500
-    static let prideYellow = Color(red: 1.00, green: 0.80, blue: 0.00)  // #FFCC00
-    static let prideGreen  = Color(red: 0.20, green: 0.78, blue: 0.35)  // #34C759
-    static let prideBlue   = Color(red: 0.00, green: 0.48, blue: 1.00)  // #007AFF
-    static let pridePurple = Color(red: 0.69, green: 0.32, blue: 0.87)  // #AF52DE
+    // MARK: - Pride Colors
+    static let prideRed    = Color(red: 1.00, green: 0.23, blue: 0.19)
+    static let prideOrange = Color(red: 1.00, green: 0.58, blue: 0.00)
+    static let prideYellow = Color(red: 1.00, green: 0.80, blue: 0.00)
+    static let prideGreen  = Color(red: 0.20, green: 0.78, blue: 0.35)
+    static let prideBlue   = Color(red: 0.00, green: 0.48, blue: 1.00)
+    static let pridePurple = Color(red: 0.69, green: 0.32, blue: 0.87)
 
-    /// All Pride colors as an array — use for gradients and confetti
     static let prideColors: [Color] = [prideRed, prideOrange, prideYellow, prideGreen, prideBlue, pridePurple]
 
-    /// Pride gradient — for progress rings, bars, and celebration moments
     static let prideGradient = LinearGradient(
         colors: prideColors,
         startPoint: .leading,
@@ -52,22 +40,17 @@ extension Color {
     )
 }
 
-// MARK: - 🔤 Canteen Typography (SF Rounded)
+// MARK: - Typography
 
 struct CanteenTypography {
-    /// Large Title Bold Rounded — Main screen headings (Dynamic Type supported)
     static let heroTitle: Font = .system(.largeTitle, design: .rounded).weight(.bold)
-    /// Title2 Semibold Rounded — Section headings (Dynamic Type supported)
     static let sectionTitle: Font = .system(.title2, design: .rounded).weight(.semibold)
-    /// Body Regular Rounded — General content text (Dynamic Type supported)
     static let bodyText: Font = .system(.body, design: .rounded)
-    /// Footnote Medium Rounded — Helper text, labels (Dynamic Type supported)
     static let caption: Font = .system(.footnote, design: .rounded).weight(.medium)
-    /// Headline Bold Rounded — Button labels (Dynamic Type supported)
     static let buttonLabel: Font = .system(.headline, design: .rounded).weight(.bold)
 }
 
-// MARK: - 📐 Canteen Spacing & Radius
+// MARK: - Spacing & Radius
 
 struct CanteenSpacing {
     static let xs: CGFloat = 4
@@ -84,7 +67,7 @@ struct CanteenRadius {
     static let full: CGFloat = 999
 }
 
-// MARK: - 🔘 Primary Button Style (Simit Button)
+// MARK: - Button Styles
 
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
@@ -101,8 +84,6 @@ struct PrimaryButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
 }
-
-// MARK: - 🔘 Secondary Button Style (Toast Button)
 
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
@@ -122,8 +103,6 @@ struct SecondaryButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - 🔘 Ghost Button Style (Ayran Button)
-
 struct GhostButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -137,15 +116,13 @@ struct GhostButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - 🧩 Convenience View Extensions
+// MARK: - View Extensions
 
 extension View {
-    /// Applies warm canteen background to a page
     func canteenBackground() -> some View {
         self.background(Color.ayranBeyazi.ignoresSafeArea())
     }
 
-    /// Applies canteen card style (non Liquid Glass fallback)
     func canteenCard() -> some View {
         self
             .padding(CanteenSpacing.m)
@@ -154,22 +131,19 @@ extension View {
             .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
     }
 
-    /// iOS 26 Liquid Glass card style — for floating/overlay elements
-    /// Falls back to opaque white if reduceTransparency is enabled
     func glassCard(cornerRadius: CGFloat = CanteenRadius.l) -> some View {
         self
             .padding(CanteenSpacing.m)
             .glassEffect(in: .rect(cornerRadius: cornerRadius))
     }
 
-    /// iOS 26 Liquid Glass container — for grouping multiple glass elements
     func glassContainer(cornerRadius: CGFloat = CanteenRadius.l) -> some View {
         self
             .glassEffect(in: .rect(cornerRadius: cornerRadius))
     }
 }
 
-// MARK: - 🪟 Liquid Glass Button Style (iOS 26)
+// MARK: - Glass Button Style
 
 struct GlassButtonStyle: ButtonStyle {
     var prominent: Bool = false
@@ -186,43 +160,21 @@ struct GlassButtonStyle: ButtonStyle {
     }
 }
 
-extension ButtonStyle where Self == GlassButtonStyle {
-    static var canteenGlass: GlassButtonStyle { GlassButtonStyle() }
-    static var canteenGlassProminent: GlassButtonStyle { GlassButtonStyle(prominent: true) }
-}
 
-// MARK: - 🏷️ Button Style Shortcuts
 
-extension ButtonStyle where Self == PrimaryButtonStyle {
-    static var canteenPrimary: PrimaryButtonStyle { PrimaryButtonStyle() }
-}
-
-extension ButtonStyle where Self == SecondaryButtonStyle {
-    static var canteenSecondary: SecondaryButtonStyle { SecondaryButtonStyle() }
-}
-
-extension ButtonStyle where Self == GhostButtonStyle {
-    static var canteenGhost: GhostButtonStyle { GhostButtonStyle() }
-}
-
-// MARK: - Canteen Coin Icon
-// Single source of truth for the coin icon used throughout the app.
-// To swap in a custom drawing: add a PNG/PDF named "canteenCoin" to Assets.xcassets,
-// then replace Image(systemName:) with Image("canteenCoin") in coinView(size:).
+// MARK: - Coin Icon
 
 struct CanteenCoinIcon: View {
     var size: CGFloat = 12
 
     var body: some View {
-        // ↓ Swap this for Image("canteenCoin") once asset is added to Assets.xcassets
         Image(systemName: "circle.fill")
             .font(.system(size: size))
+            .foregroundStyle(Color.simitSarisi)
     }
 }
 
 // MARK: - Coin Amount Label
-// Renders a number + the canteen coin icon inline.
-// Use everywhere a coin amount appears — replaces raw 🪙 emoji.
 
 struct CoinAmountLabel: View {
     let amount: Int
@@ -242,7 +194,7 @@ struct CoinAmountLabel: View {
     }
 }
 
-// MARK: - 🌈 MeshGradient Preset (iOS 18+)
+// MARK: - Mesh Gradient
 
 struct CanteenMeshGradient: View {
     private let timer = Timer.publish(every: 0.016, on: .main, in: .common).autoconnect()
@@ -263,7 +215,7 @@ struct CanteenMeshGradient: View {
                 [0, 0.5],   [x1, y1],    [1, 0.5],
                 [0, 1],     [x2, 1],     [1, 1]
             ], colors: isDark ? [
-                // Dark mode — deep warm tones
+                // dark mode — warm tones
                 Color.simitSarisi.opacity(0.12),
                 Color.tostTuruncusu.opacity(0.08),
                 Color.simitSarisi.opacity(0.10),
@@ -274,7 +226,7 @@ struct CanteenMeshGradient: View {
                 Color.tostTuruncusu.opacity(0.06),
                 Color.ayranBeyazi
             ] : [
-                // Light mode — warm canteen glow
+                // light mode — warm canteen glow
                 Color.simitSarisi.opacity(0.35),
                 Color.tostTuruncusu.opacity(0.20),
                 Color.simitSarisi.opacity(0.25),

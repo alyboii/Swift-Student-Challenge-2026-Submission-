@@ -7,60 +7,87 @@ struct SummaryView: View {
     @State private var chartAnimated = false
     @State private var badgesRevealed = false
     @State private var emojiAppeared = false
-    @State private var aiFeedback: String? = nil
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var showGoalCelebration = false
 
     var body: some View {
         ZStack {
-            CanteenMeshGradient()
+            ZStack(alignment: .topLeading) {
+                CanteenMeshGradient()
 
-            ScrollView {
-                VStack(spacing: CanteenSpacing.l) {
-                    heroCard
-                    feedbackCard
-                    if game.selectedGoal != nil {
-                        goalProgressCard
+                ScrollView {
+                    VStack(spacing: CanteenSpacing.l) {
+                        heroCard
+                        feedbackCard
+                        if game.selectedGoal != nil {
+                            goalProgressCard
+                        }
+                        nextStepButtons
+                        spendingChartCard
+                        achievementsCard
+                        Spacer(minLength: CanteenSpacing.xl)
                     }
-                    spendingChartCard
-                    achievementsCard
-                    nextStepButtons
-                    Spacer(minLength: CanteenSpacing.xl)
+                    .padding(.horizontal, CanteenSpacing.l)
+                    .padding(.top, CanteenSpacing.xl + CanteenSpacing.l)  // back button için yer
                 }
-                .padding(.horizontal, CanteenSpacing.l)
-                .padding(.top, CanteenSpacing.l)
+
+                // back button
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    game.navigate(to: .canteen)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("Canteen")
+                            .font(.system(.callout, design: .rounded, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.simitSarisi)
+                    .padding(.horizontal, CanteenSpacing.m)
+                    .padding(.vertical, CanteenSpacing.s)
+                    .glassEffect(in: .capsule)
+                }
+                .padding(.top, CanteenSpacing.xl)
+                .padding(.leading, CanteenSpacing.l)
+                .accessibilityLabel("Back to Canteen")
+                .accessibilityHint("Go back to the canteen to keep shopping")
+            }
+
+            // Goal celebration overlay
+            if showGoalCelebration, let goal = game.selectedGoal {
+                GoalCelebrationOverlay(goal: goal) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showGoalCelebration = false
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(20)
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: showGoalCelebration)
         .onAppear {
             game.checkSmartSaverAchievement()
-            game.saveState()  // Persist analytics including this session's accuracy
+            game.saveState()
             Task {
-                let emojiDelay: Double = reduceMotion ? 0 : 0.15
-                try? await Task.sleep(for: .seconds(emojiDelay))
+                try? await Task.sleep(for: .seconds(0.15))
                 emojiAppeared = true
             }
             Task {
-                let delay: Double = reduceMotion ? 0 : 0.3
-                try? await Task.sleep(for: .seconds(delay))
+                try? await Task.sleep(for: .seconds(0.3))
                 withAnimation(.spring(duration: 0.7, bounce: 0.2)) { chartAnimated = true }
             }
             Task {
-                let badgeDelay: Double = reduceMotion ? 0 : 0.6
-                try? await Task.sleep(for: .seconds(badgeDelay))
+                try? await Task.sleep(for: .seconds(0.6))
                 withAnimation(.spring(duration: 0.5, bounce: 0.15)) { badgesRevealed = true }
             }
             Task {
                 try? await Task.sleep(for: .seconds(0.5))
                 SpeechService.shared.summaryMessage(saved: game.budget)
             }
-            Task {
-                // Request AI-generated personalised feedback (graceful fallback to dadsReaction)
-                if let feedback = await AIHintService.shared.generateSessionFeedback(
-                    sessionCorrect: game.sessionCorrect,
-                    sessionAttempts: game.sessionAttempts,
-                    totalCorrectChangeSaved: game.totalCorrectChangeSaved,
-                    gamesPlayed: game.gamesPlayed
-                ) {
-                    withAnimation(.spring(duration: 0.4)) { aiFeedback = feedback }
+            // Show goal celebration if goal reached
+            if let goal = game.selectedGoal, game.sessionCorrectChangeSaved >= goal.cost {
+                Task {
+                    try? await Task.sleep(for: .seconds(1.2))
+                    withAnimation { showGoalCelebration = true }
                 }
             }
         }
@@ -72,12 +99,9 @@ struct SummaryView: View {
         VStack(spacing: CanteenSpacing.m) {
             Text(trophyEmoji)
                 .font(.system(size: 64))
-                .scaleEffect(reduceMotion ? 1.0 : (emojiAppeared ? 1.0 : 0.5))
+                .scaleEffect(emojiAppeared ? 1.0 : 0.5)
                 .opacity(emojiAppeared ? 1.0 : 0.0)
-                .animation(
-                    reduceMotion ? .none : .spring(duration: 0.6, bounce: 0.5),
-                    value: emojiAppeared
-                )
+                .animation(.spring(duration: 0.6, bounce: 0.5), value: emojiAppeared)
 
             Text(heroTitle)
                 .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -99,13 +123,12 @@ struct SummaryView: View {
             .frame(maxWidth: .infinity)
             .padding(.top, CanteenSpacing.xs)
 
-            // Impact badge — inline, compact, only shown after first correct change
             if game.totalCorrectChangeSaved > 0 {
                 HStack(spacing: CanteenSpacing.xs) {
                     Image(systemName: "storefront.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(Color(red: 0.20, green: 0.50, blue: 0.90))
-                    Text("All-time correct change: \(game.totalCorrectChangeSaved)🪙")
+                    Text("All-time correct change: \(game.totalCorrectChangeSaved) coins")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(red: 0.20, green: 0.50, blue: 0.90).opacity(0.85))
                 }
@@ -130,12 +153,11 @@ struct SummaryView: View {
             Image(systemName: icon)
                 .font(.system(size: 18))
                 .foregroundStyle(color)
-                .symbolEffect(.bounce.byLayer, value: badgesRevealed)
+                .symbolEffect(.bounce, value: badgesRevealed)
             HStack(spacing: 2) {
                 Text(value)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.cikolataKahvesi)
-                    .contentTransition(.numericText())
                 Text(unit)
                     .font(.system(size: 18))
             }
@@ -151,53 +173,14 @@ struct SummaryView: View {
     }
 
     private var heroTitle: String {
-        if game.unlockedCount >= 2 { return "Dad would be so proud! 🏆" }
+        if game.unlockedCount >= 2 { return "You're a Canteen Hero! 🏆" }
         if game.budget > 30 { return "Almost a Canteen Hero! ⭐" }
         return "Every coin is a lesson! 💪"
     }
 
-    // MARK: - Feedback Card (merged: message + savings tip)
-    // Replaces the old separate dadsReactionCard, canteenImpactCard, and savingsTipCard.
-    // One card = one purpose: emotional feedback → practical takeaway.
-
-    private var dadsReaction: (emoji: String, message: String) {
-        let accuracy = game.sessionAccuracy
-        if accuracy >= 1.0 {
-            return ("🤩", "Perfect change every time! Dad's canteen would never lose a single coin! 🪙")
-        } else if accuracy >= 0.66 {
-            return ("😊", "Great work! Dad says: \"You're learning faster than I ever did!\" 😄")
-        } else if accuracy >= 0.33 {
-            return ("🤗", "Keep going! Dad says: \"Even I made mistakes at first — that's how we learn.\" 💙")
-        } else {
-            return ("💪", "Don't give up! Dad says: \"Every wrong coin teaches you something new.\" 🌱")
-        }
-    }
-
+    // MARK: - Feedback Card
     private var feedbackCard: some View {
-        let reaction = aiFeedback.map { ("💙", $0) } ?? dadsReaction
-        return VStack(alignment: .leading, spacing: CanteenSpacing.m) {
-            // Top: Emotional message (AI or dad's reaction)
-            HStack(spacing: CanteenSpacing.s) {
-                Text(reaction.0)
-                    .font(.system(size: 28))
-                Text("A Message for You")
-                    .font(CanteenTypography.sectionTitle)
-                    .foregroundStyle(Color.cikolataKahvesi)
-            }
-            .accessibilityAddTraits(.isHeader)
-
-            Text(reaction.1)
-                .font(CanteenTypography.bodyText)
-                .foregroundStyle(Color.cikolataKahvesi.opacity(0.82))
-                .fixedSize(horizontal: false, vertical: true)
-                .lineSpacing(5)
-                .italic()
-
-            Divider()
-                .opacity(0.30)
-                .padding(.vertical, CanteenSpacing.xs)
-
-            // Bottom: Practical savings tip
+        VStack(alignment: .leading, spacing: CanteenSpacing.m) {
             Label("Savings Tip 💡", systemImage: "lightbulb.fill")
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
                 .foregroundStyle(Color.cikolataKahvesi)
@@ -217,7 +200,7 @@ struct SummaryView: View {
                 .stroke(Color.simitSarisi.opacity(0.25), lineWidth: 1.5)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Message: \(reaction.1). Savings tip: \(savingsTipText)")
+        .accessibilityLabel("Savings tip: \(savingsTipText)")
     }
 
     // MARK: - Spending Chart
@@ -326,16 +309,16 @@ struct SummaryView: View {
         .glassEffect(in: .rect(cornerRadius: CanteenRadius.l))
     }
 
-    // MARK: - Savings Tip Text (used inside feedbackCard)
+    // MARK: - Savings Tip
 
     private var savingsTipText: String {
         let saved = game.budget
         if saved >= game.startingBudget {
             return "Incredible — you saved every single coin! 💰 If you did this every day at school, in a week you could treat a friend to a Simit. 🥯 Real heroes share!"
         } else if saved > 25 {
-            return "Great work saving \(saved)🪙! If you save a little every day at the canteen, you'll reach your dream goal before you know it. Dad would call that smart! 😊"
+            return "Great work saving \(saved) coins! If you save a little every day at the canteen, you'll reach your dream goal before you know it. Dad would call that smart! 😊"
         } else if saved > 10 {
-            return "Good job! You kept \(saved)🪙 safe. Next time, pause before each snack and ask: \"Is this something I truly need?\" Small choices build big savings! 💪"
+            return "Good job! You kept \(saved) coins safe. Next time, pause before each snack and ask: \"Is this something I truly need?\" Small choices build big savings! 💪"
         } else {
             return "You spent most of your coins — and that's okay! Every great canteen hero has days like this. The trick is to learn and try again. You've got this! 🌱"
         }
@@ -345,9 +328,9 @@ struct SummaryView: View {
 
     private var goalProgressCard: some View {
         let goal = game.selectedGoal!
-        let fraction = min(1.0, Double(game.budget) / Double(goal.cost))
+        let fraction = min(1.0, Double(game.sessionCorrectChangeSaved) / Double(goal.cost))
         let pct = Int(fraction * 100)
-        let sessions = goal.sessionsNeeded(coinsPerSession: max(game.budget, 1))
+        let sessions = goal.sessionsNeeded(coinsPerSession: max(game.sessionCorrectChangeSaved, 1))
 
         return VStack(spacing: CanteenSpacing.m) {
             Label(
@@ -380,7 +363,6 @@ struct SummaryView: View {
                     Text("\(pct)%")
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.cikolataKahvesi)
-                        .contentTransition(.numericText())
                 }
 
                 VStack(alignment: .leading, spacing: CanteenSpacing.xs) {
@@ -394,7 +376,7 @@ struct SummaryView: View {
 
                     HStack(spacing: 3) {
                         CoinAmountLabel(
-                            amount: game.budget,
+                            amount: game.sessionCorrectChangeSaved,
                             font: .system(size: 13, weight: .medium, design: .rounded),
                             amountColor: Color.basariYesili
                         )
@@ -421,7 +403,7 @@ struct SummaryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(in: .rect(cornerRadius: CanteenRadius.l))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Savings goal: \(goal.name). \(pct) percent reached. \(game.budget) of \(goal.cost) coins saved.")
+        .accessibilityLabel("Savings goal: \(goal.name). \(pct) percent reached. \(game.sessionCorrectChangeSaved) of \(goal.cost) coins saved.")
     }
 
     private func goalMessage(sessions: Int, fraction: Double) -> String {
@@ -439,7 +421,6 @@ struct SummaryView: View {
     private var nextStepButtons: some View {
         VStack(spacing: CanteenSpacing.m) {
             if game.selectedGoal != nil {
-                // Goal already selected — go to detailed goal view
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     game.navigate(to: .goalSetting)
@@ -447,11 +428,10 @@ struct SummaryView: View {
                     Label("View Goal Details", systemImage: "target")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.canteenPrimary)
+                .buttonStyle(PrimaryButtonStyle())
                 .accessibilityLabel("View Goal Details")
                 .accessibilityHint("See your full savings goal progress")
             } else {
-                // No goal selected — prompt to set one
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     game.navigate(to: .goalSetting)
@@ -459,7 +439,7 @@ struct SummaryView: View {
                     Label("Set a Savings Goal 🎯", systemImage: "star.fill")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.canteenPrimary)
+                .buttonStyle(PrimaryButtonStyle())
                 .accessibilityLabel("Set a Savings Goal")
                 .accessibilityHint("Choose something to save up for")
             }
@@ -469,12 +449,12 @@ struct SummaryView: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 game.reset()
             } label: {
-                Label("Play Again", systemImage: "arrow.counterclockwise")
+                Label("Reset the Game", systemImage: "arrow.counterclockwise")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.canteenSecondary)
-            .accessibilityLabel("Play Again")
-            .accessibilityHint("Reset the game and start over from the beginning")
+            .buttonStyle(SecondaryButtonStyle())
+            .accessibilityLabel("Reset the Game")
+            .accessibilityHint("Start completely over from the beginning")
         }
     }
 }
@@ -538,11 +518,9 @@ struct EmojiSpendingRow: View {
 struct AchievementRowView: View {
     let achievement: Achievement
     @State private var drawTriggered = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: CanteenSpacing.m) {
-            // Badge icon with .wiggle.byLayer symbolEffect
             ZStack {
                 Circle()
                     .fill(achievement.isUnlocked ? achievement.prideAccentColor : Color.gray.opacity(0.10))
@@ -555,8 +533,7 @@ struct AchievementRowView: View {
                 Image(systemName: achievement.symbol)
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(achievement.isUnlocked ? .white : Color.gray.opacity(0.35))
-                    // .wiggle.byLayer — layered reveal on unlock (iOS 18+)
-                    .symbolEffect(.wiggle.byLayer, value: drawTriggered)
+                    .symbolEffect(.bounce, value: drawTriggered)
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -576,7 +553,6 @@ struct AchievementRowView: View {
             Image(systemName: achievement.isUnlocked ? "checkmark.circle.fill" : "lock.fill")
                 .font(.system(size: 20))
                 .foregroundStyle(achievement.isUnlocked ? Color.basariYesili : Color.gray.opacity(0.28))
-                .contentTransition(.symbolEffect(.replace))
         }
         .padding(CanteenSpacing.m)
         .background(achievement.isUnlocked ? achievement.prideAccentColor.opacity(0.07) : Color.gray.opacity(0.03))
@@ -584,7 +560,7 @@ struct AchievementRowView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(achievement.title): \(achievement.subtitle). \(achievement.isUnlocked ? "Unlocked." : "Locked.")")
         .onAppear {
-            if achievement.isUnlocked && !reduceMotion {
+            if achievement.isUnlocked {
                 Task {
                     try? await Task.sleep(for: .seconds(0.3))
                     drawTriggered = true

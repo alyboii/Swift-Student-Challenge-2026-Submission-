@@ -49,7 +49,7 @@ struct ChangeSuccessOverlay: View {
                                 Image(systemName: badge.symbol)
                                     .font(.system(size: 26))
                                     .foregroundStyle(Color.simitSarisi)
-                                    .symbolEffect(.wiggle.byLayer)
+                                    .symbolEffect(.bounce)
                                 Text(badge.title)
                                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                                     .foregroundStyle(Color.cikolataKahvesi.opacity(0.7))
@@ -66,18 +66,13 @@ struct ChangeSuccessOverlay: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     showHint = false
                     showConfetti = false
-                    let goToSummary = game.purchases.count >= 3 || game.budget < 3
-                    game.navigate(to: goToSummary ? .summary : .canteen)
+                    game.navigate(to: .canteen)
                 } label: {
-                    let goToSummary = game.purchases.count >= 3 || game.budget < 3
-                    Label(
-                        goToSummary ? "See My Results" : "Keep Shopping",
-                        systemImage: goToSummary ? "chart.bar.fill" : "storefront.fill"
-                    )
-                    .frame(maxWidth: .infinity)
+                    Label("Keep Shopping", systemImage: "storefront.fill")
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.canteenPrimary)
-                .accessibilityLabel(game.purchases.count >= 3 || game.budget < 3 ? "See My Results" : "Keep Shopping")
+                .buttonStyle(PrimaryButtonStyle())
+                .accessibilityLabel("Keep Shopping")
             }
             .padding(CanteenSpacing.xl)
             .background(.white.opacity(0.97))

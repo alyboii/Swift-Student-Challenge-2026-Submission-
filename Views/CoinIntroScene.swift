@@ -6,7 +6,6 @@ import UIKit
 // Larger coins are heavier, bounce less, and shake the screen more on landing.
 // After all four drop, a completion arc animates and the continue button appears.
 
-@MainActor
 final class CoinIntroScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Beat Definition
@@ -62,15 +61,13 @@ final class CoinIntroScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Physics Categories
     private struct Physics {
-        static let coin:  UInt32 = 0x1 << 0
-        static let floor: UInt32 = 0x1 << 1
+        static let coin:  UInt32 = 1
+        static let floor: UInt32 = 2
     }
 
     // MARK: - State
     var onComplete: (() -> Void)?
     var onAllBeatsComplete: (() -> Void)?   // SwiftUI shows continue button
-    var reduceMotion: Bool = false
-
     private var currentBeat: Beat? = nil
     private var droppedNodes: [SKNode] = []
     private var pendingCoin: SKNode? = nil
@@ -231,7 +228,7 @@ final class CoinIntroScene: SKScene, SKPhysicsContactDelegate {
         pendingCoin = container
 
         // 20-coin anticipation wobble
-        if beat == .twenty && !reduceMotion {
+        if beat == .twenty {
             let wobble = SKAction.sequence([
                 .wait(forDuration: 0.3),
                 .rotate(byAngle:  0.07, duration: 0.12),
@@ -268,14 +265,10 @@ final class CoinIntroScene: SKScene, SKPhysicsContactDelegate {
         addChild(hint)
         tapHint = hint
 
-        if reduceMotion {
-            hint.run(.fadeIn(withDuration: 0.3))
-        } else {
-            hint.run(.repeatForever(.sequence([
-                .group([.fadeIn(withDuration: 0.30), .moveBy(x: 0, y: -6, duration: 0.50)]),
-                .group([.fadeOut(withDuration: 0.25), .moveBy(x: 0, y: 6, duration: 0.35)]),
-            ])))
-        }
+        hint.run(.repeatForever(.sequence([
+            .group([.fadeIn(withDuration: 0.30), .moveBy(x: 0, y: -6, duration: 0.50)]),
+            .group([.fadeOut(withDuration: 0.25), .moveBy(x: 0, y: 6, duration: 0.35)]),
+        ])))
     }
 
     // MARK: - Touch Handling
@@ -294,7 +287,7 @@ final class CoinIntroScene: SKScene, SKPhysicsContactDelegate {
         SpeechService.shared.coinDropped(value: beat.rawValue)
 
         // 20-coin: short pause + "inhale" then release
-        if beat == .twenty && !reduceMotion {
+        if beat == .twenty {
             coin.physicsBody?.isDynamic = false
             coin.run(.sequence([
                 .scale(to: 1.10, duration: 0.20),
@@ -311,7 +304,7 @@ final class CoinIntroScene: SKScene, SKPhysicsContactDelegate {
         }
 
         // Screen shake (for larger coins)
-        if beat.shakeAmplitude > 0 && !reduceMotion {
+        if beat.shakeAmplitude > 0 {
             let settle: TimeInterval = beat == .twenty ? 2.0 : 1.0
             run(.wait(forDuration: settle)) { [weak self] in
                 self?.shakeCamera(amplitude: beat.shakeAmplitude)
@@ -333,16 +326,13 @@ final class CoinIntroScene: SKScene, SKPhysicsContactDelegate {
                        || contact.bodyB.categoryBitMask == Physics.coin
         guard isLargeCoin else { return }
 
-        // CGPoint is Sendable — extract before crossing actor boundary
         let point = contact.contactPoint
 
-        Task { @MainActor [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard let self, let beat = self.currentBeat else { return }
-            // Add floor shadow (visual impact for larger coins only)
             if beat.shadowRadius > 10 {
                 self.addImpactShadow(at: point, radius: beat.shadowRadius)
             }
-            // Largest coin causes settled coins to bounce slightly
             if beat == .twenty {
                 self.bounceSettledCoins()
             }

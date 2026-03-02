@@ -2,7 +2,7 @@ import AVFoundation
 import SwiftUI
 
 // MARK: - Speech Service
-// AVSpeechSynthesizer wrapper. Narrates key moments in a child-friendly tone.
+// handles all the spoken narration in the app
 
 @MainActor
 final class SpeechService {
@@ -11,38 +11,18 @@ final class SpeechService {
     private let synthesizer = AVSpeechSynthesizer()
     private var isEnabled: Bool = true
 
-    private init() {
-        configureAudioSession()
-    }
-
-    // MARK: - Audio Session
-
-    private func configureAudioSession() {
-        do {
-            try AVAudioSession.sharedInstance().setCategory(
-                .playback,
-                mode: .spokenAudio,
-                options: [.duckOthers, .mixWithOthers]
-            )
-            try AVAudioSession.sharedInstance().setActive(true)
-        } catch {
-            // Silent fail — speech is optional enhancement
-        }
-    }
+    private init() {}
 
     // MARK: - Speak
 
-    func speak(_ text: String, rate: Float = 0.45, pitch: Float = 1.1) {
+    func speak(_ text: String) {
         guard isEnabled else { return }
 
-        // Don't interrupt ongoing speech for lower priority lines
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .word)
         }
 
         let utterance = AVSpeechUtterance(string: text)
-        utterance.rate = rate
-        utterance.pitchMultiplier = pitch
         utterance.volume = 0.9
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         utterance.preUtteranceDelay = 0.1
@@ -59,82 +39,81 @@ final class SpeechService {
         if !enabled { stop() }
     }
 
-    // MARK: - 🎤 Scripted Lines
+    // MARK: - Scripted Lines
 
-    /// Splash screen welcome
+    // Splash screen welcome
     func welcomeCanteen() {
-        speak("Welcome to Canteen Hero!", rate: 0.44, pitch: 1.15)
+        speak("Welcome to Canteen Hero!")
     }
 
-    /// Story screen — transition to canteen
+    // Story screen — transition to canteen
     func letsGoToCanteen() {
-        speak("Let's go to the canteen!", rate: 0.46, pitch: 1.1)
+        speak("Let's go to the canteen!")
     }
 
-    /// Canteen — product purchased
+    // Canteen — product purchased
     func purchasedProduct(_ name: String) {
-        speak("Great choice! You picked \(name).", rate: 0.45, pitch: 1.05)
+        speak("Great choice! You picked \(name).")
     }
 
-    /// Change game — prompt
+    // Change game — prompt
     func askForChange(amount: Int) {
-        speak("How much change should you get back? Make \(amount) coins!", rate: 0.44, pitch: 1.1)
+        speak("How much change should you get back? Make \(amount) coins!")
     }
 
-    /// Change game — correct!
+    // Change game — correct!
     func correctChange() {
-        speak("Perfect! You got the right change! Amazing!", rate: 0.48, pitch: 1.2)
+        speak("Perfect! You got the right change! Amazing!")
     }
 
-    /// Change game — too much
+    // Change game — too much
     func tooMuchChange() {
-        speak("Oops! That's too many coins. Try removing some.", rate: 0.44, pitch: 1.0)
+        speak("Oops! That's too many coins. Try removing some.")
     }
 
-    /// Change game — hint
+    // Change game — hint
     func hint(_ text: String) {
-        speak(text, rate: 0.43, pitch: 1.05)
+        speak(text)
     }
 
-    /// Achievement unlocked
+    // Achievement unlocked
     func achievementUnlocked(_ title: String) {
-        speak("Achievement unlocked: \(title)!", rate: 0.46, pitch: 1.15)
+        speak("Achievement unlocked: \(title)!")
     }
 
-    /// Summary screen
+    // Summary screen
     func summaryMessage(saved: Int) {
         if saved > 0 {
-            speak("Great job! You saved \(saved) coins today!", rate: 0.45, pitch: 1.1)
+            speak("Great job! You saved \(saved) coins today!")
         } else {
-            speak("You spent all your coins! Try saving some next time.", rate: 0.44, pitch: 1.0)
+            speak("You spent all your coins! Try saving some next time.")
         }
     }
 
-    /// Goal setting — goal selected
+    // Goal setting — goal selected
     func goalSelected(_ goalName: String, sessions: Int) {
-        speak("Great goal! Save a little each day and you'll get your \(goalName) in \(sessions) more visits!", rate: 0.44, pitch: 1.1)
+        speak("Great goal! Save a little each day and you'll get your \(goalName) in \(sessions) more visits!")
     }
 
-    // MARK: - 🪙 CoinIntro Narration
+    // MARK: - CoinIntro
 
-    /// Transition: StoryView → CoinIntroView
+    // Transition: StoryView → CoinIntroView
     func letsLearnCoins() {
-        speak("First, let's meet your coins!", rate: 0.45, pitch: 1.15)
+        speak("First, let's meet your coins!")
     }
 
-    /// Plays when each coin drops — pitch and rate change based on value
-    /// value: 1, 5, 10, or 20
+    // Plays when each coin drops
     func coinDropped(value: Int) {
         switch value {
-        case 1:  speak("Tiny!",            rate: 0.52, pitch: 1.35)
-        case 5:  speak("More!",            rate: 0.48, pitch: 1.15)
-        case 10: speak("A lot!",           rate: 0.45, pitch: 1.00)
-        default: speak("Whoa! So much!",   rate: 0.40, pitch: 0.85)
+        case 1:  speak("Tiny!")
+        case 5:  speak("More!")
+        case 10: speak("A lot!")
+        default: speak("Whoa! So much!")
         }
     }
 
-    /// After all coins have been revealed
+    // After all coins have been revealed
     func allCoinsRevealed() {
-        speak("You know all your coins! Now let's go shopping!", rate: 0.46, pitch: 1.1)
+        speak("You know all your coins! Now let's go shopping!")
     }
 }

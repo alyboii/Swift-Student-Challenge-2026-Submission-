@@ -1,7 +1,6 @@
 import SwiftUI
 
 // MARK: - Splash View
-// Welcome screen. Coins are shown at ascending sizes to introduce value hierarchy.
 
 struct SplashView: View {
     @Environment(GameManager.self) private var game
@@ -11,7 +10,6 @@ struct SplashView: View {
     @State private var buttonOpacity: Double = 0
     @State private var coinBounce = false
     @State private var coinsAppeared = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var hSizeClass
 
     private var isIPad: Bool { hSizeClass == .regular }
@@ -24,23 +22,24 @@ struct SplashView: View {
                 Spacer()
 
                 // Logo cluster
-                VStack(spacing: CanteenSpacing.m) {
+                let iconSize: CGFloat = isIPad ? 180 : 148
+                VStack(spacing: CanteenSpacing.l) {
                     ZStack {
-                        // Layered glow
+                        // glow behind the app icon
                         Circle()
                             .fill(Color.simitSarisi.opacity(0.18))
-                            .frame(width: 160, height: 160)
-                            .blur(radius: 18)
+                            .frame(width: iconSize * 1.55, height: iconSize * 1.55)
+                            .blur(radius: 28)
                         Circle()
-                            .fill(Color.simitSarisi.opacity(0.14))
-                            .frame(width: 130, height: 130)
-                        Circle()
-                            .fill(Color.simitSarisi.opacity(0.22))
-                            .frame(width: 104, height: 104)
+                            .fill(Color.simitSarisi.opacity(0.12))
+                            .frame(width: iconSize * 1.25, height: iconSize * 1.25)
 
-                        Text("🏪")
-                            .font(.system(size: 60))
-                            .scaleEffect(coinBounce && !reduceMotion ? 1.08 : 1.0)
+                        AppIconView()
+                            .frame(width: iconSize, height: iconSize)
+                            // rounded like a home screen icon
+                            .clipShape(RoundedRectangle(cornerRadius: iconSize * 0.225, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.20), radius: 16, x: 0, y: 8)
+                            .scaleEffect(coinBounce ? 1.04 : 1.0)
                             .animation(
                                 .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
                                 value: coinBounce
@@ -49,26 +48,55 @@ struct SplashView: View {
                     .scaleEffect(logoScale)
                     .opacity(logoOpacity)
 
-                    VStack(spacing: CanteenSpacing.xs) {
+                    // title + tagline
+                    VStack(spacing: 0) {
                         Text("Canteen Hero")
                             .font(.system(isIPad ? .largeTitle : .title, design: .rounded, weight: .bold))
                             .foregroundStyle(Color.cikolataKahvesi)
 
                         Text("Learn money. One coin at a time.")
-                            .font(CanteenTypography.bodyText)
-                            .foregroundStyle(Color.cikolataKahvesi.opacity(0.60))
+                            .font(.system(.title3, design: .rounded, weight: .semibold))
+                            .foregroundStyle(Color.cikolataKahvesi.opacity(0.75))
                             .multilineTextAlignment(.center)
+                            .padding(.top, CanteenSpacing.s)
                     }
                     .opacity(logoOpacity)
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Canteen Hero. Learn money. One coin at a time.")
+
+                    // Turkey badge
+                    HStack(spacing: CanteenSpacing.s) {
+                        Text("🇹🇷")
+                            .font(.system(size: 18))
+                        Text("Inspired by a real school canteen in Turkey")
+                            .font(.system(.footnote, design: .rounded, weight: .semibold))
+                            .foregroundStyle(Color.cikolataKahvesi.opacity(0.80))
+                    }
+                    .padding(.horizontal, CanteenSpacing.m)
+                    .padding(.vertical, CanteenSpacing.s)
+                    .glassEffect(in: .capsule)
+                    .opacity(logoOpacity)
+                    .accessibilityLabel("Inspired by a real school canteen in Turkey")
                 }
 
-                Spacer()
+                // thin divider line
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [
+                            Color.simitSarisi.opacity(0),
+                            Color.simitSarisi.opacity(0.35),
+                            Color.simitSarisi.opacity(0)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ))
+                    .frame(height: 1)
+                    .padding(.horizontal, CanteenSpacing.xl)
+                    .padding(.vertical, CanteenSpacing.l)
+                    .opacity(subtitleOpacity)
 
-                // Coin row — ascending size signals ascending value
-                // The 20-coin is visually almost 2× the 1-coin.
-                VStack(spacing: CanteenSpacing.s) {
+                // coin row — bigger = worth more
+                VStack(spacing: CanteenSpacing.m) {
                     HStack(alignment: .bottom, spacing: isIPad ? CanteenSpacing.xl : CanteenSpacing.l) {
                         ForEach(Array(CoinDenomination.allCases.enumerated()), id: \.element) { idx, coin in
                             SplashCoinItem(
@@ -81,16 +109,6 @@ struct SplashView: View {
                     }
                     .opacity(subtitleOpacity)
 
-                    // "Smaller = less, bigger = more" micro-hint
-                    HStack(spacing: CanteenSpacing.xs) {
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(.caption2, weight: .bold))
-                            .foregroundStyle(Color.simitSarisi.opacity(0.7))
-                        Text("bigger coin = more value")
-                            .font(.system(.caption2, design: .rounded, weight: .semibold))
-                            .foregroundStyle(Color.cikolataKahvesi.opacity(0.45))
-                    }
-                    .opacity(subtitleOpacity)
                 }
                 .padding(.bottom, CanteenSpacing.l)
 
@@ -104,7 +122,6 @@ struct SplashView: View {
                             .font(CanteenTypography.buttonLabel)
                         Image(systemName: "arrow.right.circle.fill")
                             .font(.title3)
-                            .symbolEffect(.appear.byLayer, isActive: buttonOpacity > 0.5)
                             .symbolEffect(.bounce, value: coinBounce)
                     }
                     .foregroundStyle(Color.cikolataKahvesi)
@@ -129,15 +146,14 @@ struct SplashView: View {
                         .opacity(buttonOpacity)
                 }
 
-                // Privacy by Design badge — Apple culture signal
+                // privacy note
                 HStack(spacing: 6) {
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(.caption2))
-                        .foregroundStyle(Color.basariYesili.opacity(0.7))
-                        .symbolEffect(.appear.byLayer, isActive: buttonOpacity > 0.5)
+                    Image(systemName: "hand.raised.fill")
+                        .font(.system(.footnote, weight: .semibold))
+                        .foregroundStyle(Color.basariYesili.opacity(0.80))
                     Text("Your data stays on this device")
-                        .font(.system(.caption2, design: .rounded, weight: .medium))
-                        .foregroundStyle(Color.cikolataKahvesi.opacity(0.40))
+                        .font(.system(.footnote, design: .rounded, weight: .semibold))
+                        .foregroundStyle(Color.cikolataKahvesi.opacity(0.60))
                 }
                 .padding(.top, CanteenSpacing.xs)
                 .opacity(buttonOpacity)
@@ -152,13 +168,6 @@ struct SplashView: View {
     }
 
     private func animateIn() {
-        if reduceMotion {
-            logoScale = 1; logoOpacity = 1
-            subtitleOpacity = 1; buttonOpacity = 1
-            coinsAppeared = true
-            SpeechService.shared.welcomeCanteen()
-            return
-        }
         withAnimation(.spring(duration: 0.75, bounce: 0.50).delay(0.1)) {
             logoScale = 1
             logoOpacity = 1
@@ -184,8 +193,6 @@ struct SplashView: View {
 }
 
 // MARK: - Splash Coin Item
-// Each coin in the splash row — ascending SIZE communicates ascending value.
-// 1-coin is small, 20-coin is almost twice as large.
 
 private struct SplashCoinItem: View {
     let coin: CoinDenomination
@@ -193,16 +200,12 @@ private struct SplashCoinItem: View {
     let entranceDelay: Double
     let bouncing: Bool
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
-        // Pre-typed locals break the long modifier chain that exceeds the
-        // Swift type-checker inference budget and causes a compile timeout.
-        let bounceScale: CGFloat = (bouncing && !reduceMotion)
+        let bounceScale: CGFloat = bouncing
             ? 1.0 + 0.05 * (CGFloat(coin.rawValue) / 20.0)
             : 1.0
-        let entranceScale: CGFloat = appeared ? 1.0 : (reduceMotion ? 1.0 : 0.3)
-        let entranceOffsetY: CGFloat = appeared ? 0 : (reduceMotion ? 0 : 20)
+        let entranceScale: CGFloat = appeared ? 1.0 : 0.3
+        let entranceOffsetY: CGFloat = appeared ? 0 : 20
 
         return VStack(spacing: 6) {
             ZStack {

@@ -1,7 +1,6 @@
 import SwiftUI
 
 // MARK: - Progress Arc Shape
-// iOS 26 @Animatable macro — auto-synthesises animatableData for smooth ring fill
 
 @Animatable
 struct ProgressArc: Shape {
@@ -29,7 +28,6 @@ struct GoalSettingView: View {
     @State private var progressAnimated   = false
     @State private var cardsAppeared      = false
     @State private var headerPop          = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let goals = SavingsGoal.all
 
@@ -84,18 +82,14 @@ struct GoalSettingView: View {
         .onAppear {
             // Staggered entrance
             Task {
-                let delay: Double = reduceMotion ? 0 : 0.2
-                try? await Task.sleep(for: .seconds(delay))
+                try? await Task.sleep(for: .seconds(0.2))
                 withAnimation(.spring(duration: 0.6, bounce: 0.25)) { cardsAppeared = true }
                 withAnimation(.spring(duration: 0.7, bounce: 0.45)) { headerPop = true }
             }
-            // Narration — delay so it doesn't clash with SummaryView speech
+            // wait a bit before speaking
             Task {
                 try? await Task.sleep(for: .seconds(0.8))
-                SpeechService.shared.speak(
-                    "What are you saving for? Pick a goal!",
-                    rate: 0.45, pitch: 1.12
-                )
+                SpeechService.shared.speak("What are you saving for? Pick a goal!")
             }
         }
     }
@@ -107,12 +101,9 @@ struct GoalSettingView: View {
             // Animated trophy / star
             Text("🎯")
                 .font(.system(size: 56))
-                .scaleEffect(reduceMotion ? 1.0 : (headerPop ? 1.0 : 0.4))
+                .scaleEffect(headerPop ? 1.0 : 0.4)
                 .opacity(headerPop ? 1.0 : 0.0)
-                .animation(
-                    reduceMotion ? .none : .spring(duration: 0.7, bounce: 0.5),
-                    value: headerPop
-                )
+                .animation(.spring(duration: 0.7, bounce: 0.5), value: headerPop)
 
             Text("Set a Savings Goal")
                 .font(.system(.title2, design: .rounded, weight: .bold))
@@ -128,7 +119,7 @@ struct GoalSettingView: View {
                 HStack(spacing: 3) {
                     Text("You saved")
                     CoinAmountLabel(
-                        amount: game.budget,
+                        amount: game.sessionCorrectChangeSaved,
                         font: .system(.subheadline, design: .rounded, weight: .semibold),
                         amountColor: Color.basariYesili,
                         coinColor: Color.basariYesili
@@ -158,7 +149,7 @@ struct GoalSettingView: View {
         .frame(maxWidth: .infinity)
         .glassEffect(in: .rect(cornerRadius: CanteenRadius.l))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Set a Savings Goal. You saved \(game.budget) coins today. Choose something to save up for.")
+        .accessibilityLabel("Set a Savings Goal. You saved \(game.sessionCorrectChangeSaved) coins today. Choose something to save up for.")
     }
 
     // MARK: - Goal Picker
@@ -169,13 +160,13 @@ struct GoalSettingView: View {
                 GoalCardView(
                     goal:          goal,
                     isSelected:    selectedGoal?.id == goal.id,
-                    savedCoins:    game.budget
+                    savedCoins:    game.sessionCorrectChangeSaved
                 )
                 .opacity(cardsAppeared ? 1.0 : 0.0)
                 .offset(y: cardsAppeared ? 0 : 28)
                 .animation(
                     .spring(duration: 0.5, bounce: 0.22)
-                        .delay(reduceMotion ? 0 : Double(index) * 0.13),
+                        .delay(Double(index) * 0.13),
                     value: cardsAppeared
                 )
                 .onTapGesture {
@@ -184,13 +175,11 @@ struct GoalSettingView: View {
                         selectedGoal    = goal
                         progressAnimated = false
                     }
-                    // GameManager triggers speech via selectGoal
                     game.selectGoal(goal)
 
                     // Animate progress ring after a beat
                     Task {
-                        let ringDelay: Double = reduceMotion ? 0 : 0.40
-                        try? await Task.sleep(for: .seconds(ringDelay))
+                        try? await Task.sleep(for: .seconds(0.40))
                         withAnimation(.spring(duration: 1.1, bounce: 0.08)) {
                             progressAnimated = true
                         }
@@ -224,8 +213,8 @@ struct GoalSettingView: View {
     // MARK: - Progress Card
 
     private func progressCard(for goal: SavingsGoal) -> some View {
-        let fraction  = min(1.0, Double(game.budget) / Double(goal.cost))
-        let sessions  = goal.sessionsNeeded(coinsPerSession: max(game.budget, 1))
+        let fraction  = min(1.0, Double(game.sessionCorrectChangeSaved) / Double(goal.cost))
+        let sessions  = goal.sessionsNeeded(coinsPerSession: max(game.sessionCorrectChangeSaved, 1))
         let pct       = Int(fraction * 100)
 
         return VStack(spacing: CanteenSpacing.m) {
@@ -242,7 +231,6 @@ struct GoalSettingView: View {
                     .stroke(Color.gray.opacity(0.13), lineWidth: 16)
                     .frame(width: 150, height: 150)
 
-                // Animated arc — @Animatable ProgressArc
                 ProgressArc(progress: progressAnimated ? fraction : 0)
                     .stroke(
                         LinearGradient(
@@ -260,7 +248,6 @@ struct GoalSettingView: View {
                     Text("\(pct)%")
                         .font(.system(.title, design: .rounded, weight: .bold))
                         .foregroundStyle(Color.cikolataKahvesi)
-                        .contentTransition(.numericText())
                     Text("of goal")
                         .font(.system(.caption, design: .rounded, weight: .medium))
                         .foregroundStyle(Color.cikolataKahvesi.opacity(0.50))
@@ -316,12 +303,12 @@ struct GoalSettingView: View {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 game.reset()
             } label: {
-                Label("Play Again", systemImage: "arrow.counterclockwise")
+                Label("Reset the Game", systemImage: "arrow.counterclockwise")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.canteenPrimary)
-            .accessibilityLabel("Play Again")
-            .accessibilityHint("Reset the game and go back to the beginning")
+            .buttonStyle(PrimaryButtonStyle())
+            .accessibilityLabel("Reset the Game")
+            .accessibilityHint("Start completely over from the beginning")
         }
     }
 }
@@ -334,7 +321,6 @@ struct GoalCardView: View {
     let savedCoins: Int
 
     @State private var isFlipped = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var fraction: Double {
         min(1.0, Double(savedCoins) / Double(goal.cost))
@@ -359,12 +345,10 @@ struct GoalCardView: View {
                 )
         }
         .onChange(of: isSelected) { _, selected in
-            if selected && !reduceMotion {
+            if selected {
                 withAnimation(.spring(duration: 0.5, bounce: 0.20)) { isFlipped = true }
-            } else if !selected {
+            } else {
                 withAnimation(.spring(duration: 0.38, bounce: 0.10)) { isFlipped = false }
-            } else if selected && reduceMotion {
-                isFlipped = true
             }
         }
     }

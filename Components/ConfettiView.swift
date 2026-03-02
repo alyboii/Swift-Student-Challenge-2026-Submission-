@@ -5,7 +5,7 @@ import SwiftUI
 
 // MARK: - Particle Model
 
-private struct ConfettiParticle: Sendable {
+private struct ConfettiParticle {
     let id: Int
     let x: CGFloat           // 0.0 - 1.0 (normalized width)
     let color: Color
@@ -18,7 +18,7 @@ private struct ConfettiParticle: Sendable {
     let birth: Date
     let shape: ParticleShape
 
-    enum ParticleShape: Int, CaseIterable, Sendable {
+    enum ParticleShape: Int, CaseIterable {
         case circle, square, triangle, coin
     }
 }

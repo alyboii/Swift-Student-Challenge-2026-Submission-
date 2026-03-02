@@ -26,7 +26,7 @@ struct CanteenView: View {
                             .padding(.horizontal, CanteenSpacing.l)
 
                         if let goal = game.selectedGoal {
-                            GoalProgressPill(goal: goal, savedCoins: game.budget)
+                            GoalProgressPill(goal: goal, savedCoins: game.sessionCorrectChangeSaved)
                                 .padding(.horizontal, CanteenSpacing.l)
                         }
 
@@ -60,7 +60,7 @@ struct CanteenView: View {
                     withAnimation { tutorialStep = 1 }
                 }
             } else {
-                SpeechService.shared.speak("Welcome back to the canteen! Pick something to buy!", rate: 0.44, pitch: 1.1)
+                SpeechService.shared.speak("Welcome back to the canteen! Pick something to buy!")
             }
         }
     }
@@ -68,46 +68,16 @@ struct CanteenView: View {
     // MARK: Header
 
     private var canteenHeader: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("🏪 The Canteen")
-                    .font(.system(.title2, design: .rounded, weight: .bold))
-                    .foregroundStyle(Color.cikolataKahvesi)
-                    .accessibilityAddTraits(.isHeader)
-                Text("Tap to buy, then calculate change!")
-                    .font(CanteenTypography.caption)
-                    .foregroundStyle(Color.cikolataKahvesi.opacity(0.55))
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                // Budget badge — SF Symbol coin
-                HStack(spacing: 4) {
-                    Image(systemName: "circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.simitSarisi)
-                        .symbolEffect(.bounce, value: game.budget)
-                    Text("\(game.budget)")
-                        .font(.system(.headline, design: .rounded, weight: .bold))
-                        .foregroundStyle(Color.cikolataKahvesi)
-                        .contentTransition(.numericText())
-                        .animation(.spring(duration: 0.3), value: game.budget)
-                }
-                .padding(.horizontal, CanteenSpacing.m)
-                .padding(.vertical, CanteenSpacing.s)
-                .glassEffect(in: .capsule)
-                .accessibilityLabel("\(game.budget) coins remaining")
-
-                if let goal = game.selectedGoal {
-                    HStack(spacing: 3) {
-                        Text(goal.emoji).font(.system(size: 13))
-                        Text(goal.name)
-                            .font(.system(.caption2, design: .rounded, weight: .semibold))
-                            .foregroundStyle(Color.basariYesili)
-                    }
-                    .accessibilityLabel("Saving for \(goal.name)")
-                }
-            }
+        VStack(spacing: 2) {
+            Text("🏪 The Canteen")
+                .font(.system(.title2, design: .rounded, weight: .bold))
+                .foregroundStyle(Color.cikolataKahvesi)
+                .accessibilityAddTraits(.isHeader)
+            Text("Tap to buy, then calculate change!")
+                .font(CanteenTypography.caption)
+                .foregroundStyle(Color.cikolataKahvesi.opacity(0.55))
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, CanteenSpacing.l)
         .padding(.vertical, CanteenSpacing.m)
         .glassEffect(in: .rect(cornerRadius: 0))
@@ -193,7 +163,7 @@ struct CanteenView: View {
                 Label("Undo Last Purchase", systemImage: "arrow.uturn.backward")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.canteenGhost)
+            .buttonStyle(GhostButtonStyle())
             .padding(.horizontal, CanteenSpacing.l)
             .accessibilityLabel("Undo last purchase")
             .accessibilityHint("Removes the last item you bought and returns the coins")
@@ -210,7 +180,7 @@ struct CanteenView: View {
             Label("See My Results", systemImage: "chart.bar.fill")
                 .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.canteenPrimary)
+        .buttonStyle(PrimaryButtonStyle())
         .padding(.horizontal, CanteenSpacing.l)
         .accessibilityLabel("See My Results")
         .accessibilityHint("View your spending chart and earned achievements")
@@ -234,7 +204,6 @@ struct BudgetHeaderView: View {
                         Text("\(game.budget)")
                             .font(.system(.largeTitle, design: .rounded, weight: .bold))
                             .foregroundStyle(Color.cikolataKahvesi)
-                            .contentTransition(.numericText())
                             .animation(.spring(duration: 0.35), value: game.budget)
                         Image(systemName: "circle.fill")
                             .font(.system(size: 22))
@@ -253,7 +222,6 @@ struct BudgetHeaderView: View {
                         Text("\(game.totalSpent)")
                             .font(.system(.title3, design: .rounded, weight: .semibold))
                             .foregroundStyle(Color.tostTuruncusu)
-                            .contentTransition(.numericText())
                             .animation(.spring(duration: 0.35), value: game.totalSpent)
                         Image(systemName: "circle.fill")
                             .font(.system(size: 16))
@@ -308,21 +276,15 @@ struct ProductCardView: View {
 
     @Environment(GameManager.self) private var game
     @State private var appeared = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var canAfford: Bool { game.budget >= product.price }
 
-    private struct CardAnimValues {
-        var scale: Double = 0.82
-        var opacity: Double = 0.0
-        var yOffset: CGFloat = 24
-    }
 
     var body: some View {
         VStack(spacing: CanteenSpacing.s) {
             Text(product.emoji)
                 .font(.system(size: 52))
-                .scaleEffect(appeared ? 1.0 : (reduceMotion ? 1.0 : 0.5))
+                .scaleEffect(appeared ? 1.0 : 0.5)
                 .animation(.spring(duration: 0.5, bounce: 0.45).delay(entranceDelay + 0.1), value: appeared)
 
             VStack(spacing: 2) {
@@ -351,33 +313,13 @@ struct ProductCardView: View {
         .frame(maxWidth: .infinity)
         .glassEffect(in: .rect(cornerRadius: CanteenRadius.l))
         .opacity(canAfford ? 1.0 : 0.55)
-        .keyframeAnimator(initialValue: CardAnimValues(), trigger: appeared) { view, val in
-            view
-                .scaleEffect(val.scale)
-                .opacity(val.opacity)
-                .offset(y: val.yOffset)
-        } keyframes: { _ in
-            KeyframeTrack(\.scale) {
-                LinearKeyframe(0.82, duration: 0.01)
-                SpringKeyframe(1.04, duration: 0.28, spring: .bouncy)
-                CubicKeyframe(1.0, duration: 0.14)
-            }
-            KeyframeTrack(\.opacity) {
-                LinearKeyframe(0.0, duration: 0.01)
-                LinearKeyframe(1.0, duration: 0.20)
-            }
-            KeyframeTrack(\.yOffset) {
-                LinearKeyframe(24, duration: 0.01)
-                SpringKeyframe(0, duration: 0.32, spring: .snappy)
-            }
-        }
+        .scaleEffect(appeared ? 1.0 : 0.85)
+        .opacity(appeared ? 1.0 : 0.0)
+        .offset(y: appeared ? 0 : 20)
+        .animation(.spring(duration: 0.4, bounce: 0.25).delay(entranceDelay), value: appeared)
         .onAppear {
-            if !reduceMotion {
-                Task {
-                    try? await Task.sleep(for: .seconds(entranceDelay))
-                    appeared = true
-                }
-            } else {
+            Task {
+                try? await Task.sleep(for: .seconds(entranceDelay))
                 appeared = true
             }
         }
@@ -419,7 +361,6 @@ struct ProductCardView: View {
 private struct TutorialOverlayView: View {
     @Binding var step: Int
     let onDismiss: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var emojiVisible = false
 
     private struct StepContent {
@@ -465,12 +406,9 @@ private struct TutorialOverlayView: View {
             VStack(spacing: CanteenSpacing.l) {
                 Text(content.emoji)
                     .font(.system(size: 60))
-                    .scaleEffect(reduceMotion ? 1.0 : (emojiVisible ? 1.0 : 0.4))
+                    .scaleEffect(emojiVisible ? 1.0 : 0.4)
                     .opacity(emojiVisible ? 1.0 : 0.0)
-                    .animation(
-                        reduceMotion ? .none : .spring(duration: 0.5, bounce: 0.45),
-                        value: emojiVisible
-                    )
+                    .animation(.spring(duration: 0.5, bounce: 0.45), value: emojiVisible)
                     .onAppear { emojiVisible = true }
                     .onChange(of: step) { _, _ in
                         emojiVisible = false
@@ -508,19 +446,19 @@ private struct TutorialOverlayView: View {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         onDismiss()
                     }
-                    .buttonStyle(.canteenGhost)
+                    .buttonStyle(GhostButtonStyle())
                     .accessibilityLabel("Skip tutorial")
 
                     Button(step < 3 ? "Next →" : "Let's go! 🏪") {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         if step < 3 {
                             withAnimation(.spring(duration: 0.3)) { step += 1 }
-                            SpeechService.shared.speak(content.speech, rate: 0.44, pitch: 1.1)
+                            SpeechService.shared.speak(content.speech)
                         } else {
                             onDismiss()
                         }
                     }
-                    .buttonStyle(.canteenPrimary)
+                    .buttonStyle(PrimaryButtonStyle())
                     .accessibilityLabel(step < 3 ? "Next tutorial step" : "Start shopping")
                 }
             }
@@ -531,7 +469,7 @@ private struct TutorialOverlayView: View {
             .padding(.horizontal, CanteenSpacing.xl)
         }
         .onAppear {
-            SpeechService.shared.speak(content.speech, rate: 0.44, pitch: 1.1)
+            SpeechService.shared.speak(content.speech)
         }
         .accessibilityElement(children: .contain)
     }
@@ -589,7 +527,6 @@ struct GoalProgressPill: View {
                 Text("\(savedCoins)")
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.basariYesili)
-                    .contentTransition(.numericText())
                     .animation(.spring(duration: 0.35), value: savedCoins)
                 HStack(spacing: 2) {
                     Text("/ \(goal.cost)")

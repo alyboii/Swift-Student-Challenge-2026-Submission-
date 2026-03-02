@@ -8,7 +8,6 @@ struct GoalPickerView: View {
     @State private var selectedGoal: SavingsGoal? = nil
     @State private var cardsAppeared = false
     @State private var headerPop = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let goals = SavingsGoal.all
 
@@ -36,17 +35,13 @@ struct GoalPickerView: View {
         }
         .onAppear {
             Task {
-                let delay: Double = reduceMotion ? 0 : 0.15
-                try? await Task.sleep(for: .seconds(delay))
+                try? await Task.sleep(for: .seconds(0.15))
                 withAnimation(.spring(duration: 0.6, bounce: 0.3)) { headerPop = true }
                 withAnimation(.spring(duration: 0.5, bounce: 0.2)) { cardsAppeared = true }
             }
             Task {
                 try? await Task.sleep(for: .seconds(0.4))
-                SpeechService.shared.speak(
-                    "A savings goal is something you want to buy! If you don't spend all your coins, you save them. Pick something you want to save for!",
-                    rate: 0.46, pitch: 1.12
-                )
+                SpeechService.shared.speak("A savings goal is something you want to buy! If you don't spend all your coins, you save them. Pick something you want to save for!")
             }
         }
     }
@@ -57,12 +52,9 @@ struct GoalPickerView: View {
         VStack(spacing: CanteenSpacing.s) {
             Text("🎯")
                 .font(.system(size: 56))
-                .scaleEffect(reduceMotion ? 1.0 : (headerPop ? 1.0 : 0.4))
+                .scaleEffect(headerPop ? 1.0 : 0.4)
                 .opacity(headerPop ? 1.0 : 0.0)
-                .animation(
-                    reduceMotion ? .none : .spring(duration: 0.7, bounce: 0.5),
-                    value: headerPop
-                )
+                .animation(.spring(duration: 0.7, bounce: 0.5), value: headerPop)
 
             Text("What Are You Saving For?")
                 .font(.system(.title2, design: .rounded, weight: .bold))
@@ -105,7 +97,7 @@ struct GoalPickerView: View {
                 .offset(y: cardsAppeared ? 0 : 24)
                 .animation(
                     .spring(duration: 0.5, bounce: 0.2)
-                        .delay(reduceMotion ? 0 : Double(index) * 0.1),
+                        .delay(Double(index) * 0.1),
                     value: cardsAppeared
                 )
                 .onTapGesture {
@@ -136,7 +128,7 @@ struct GoalPickerView: View {
             Label("Let's Shop!", systemImage: "storefront.fill")
                 .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.canteenPrimary)
+        .buttonStyle(PrimaryButtonStyle())
         .accessibilityLabel("Continue to the canteen")
         .accessibilityHint("Start shopping with your savings goal in mind")
     }
@@ -158,9 +150,17 @@ private struct GoalPickerCard: View {
                 Text(goal.name)
                     .font(.system(.callout, design: .rounded, weight: .bold))
                     .foregroundStyle(Color.cikolataKahvesi)
-                Text("\(goal.cost)🪙 to save up")
-                    .font(.system(.caption, design: .rounded, weight: .medium))
-                    .foregroundStyle(Color.cikolataKahvesi.opacity(0.55))
+                HStack(spacing: 3) {
+                    Text("Save up:")
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                        .foregroundStyle(Color.cikolataKahvesi.opacity(0.55))
+                    CoinAmountLabel(
+                        amount: goal.cost,
+                        font: .system(.caption, design: .rounded).weight(.semibold),
+                        amountColor: Color.simitSarisi,
+                        coinColor: Color.simitSarisi
+                    )
+                }
             }
 
             Spacer()

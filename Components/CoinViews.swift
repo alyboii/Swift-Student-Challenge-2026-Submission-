@@ -24,7 +24,7 @@ struct CoinBankButton: View {
                 .font(.system(size: size))
                 .foregroundStyle(.white, denomination.coinColor, denomination.coinColor.opacity(0.8))
                 .symbolRenderingMode(.palette)
-                .symbolEffect(.wiggle.byLayer, options: .repeating, value: pressed)
+                .symbolEffect(.bounce, value: pressed)
                 .shadow(color: denomination.coinColor.opacity(0.55), radius: 6, x: 0, y: 4)
                 .scaleEffect(pressed ? 0.86 : 1.0)
                 .animation(.spring(duration: 0.15), value: pressed)
@@ -72,7 +72,6 @@ struct TrayChipView: View {
 
 struct CelebrationEmojiView: View {
     @State private var trigger = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     enum Phase: CaseIterable {
         case idle, pop, float, bounce, settle
@@ -105,8 +104,8 @@ struct CelebrationEmojiView: View {
             .font(.system(size: 78))
             .phaseAnimator(Phase.allCases, trigger: trigger) { view, phase in
                 view
-                    .scaleEffect(reduceMotion ? 1.0 : phase.scale)
-                    .offset(y: reduceMotion ? 0 : phase.yOffset)
+                    .scaleEffect(phase.scale)
+                    .offset(y: phase.yOffset)
                     .opacity(phase.opacity)
             } animation: { phase in
                 switch phase {

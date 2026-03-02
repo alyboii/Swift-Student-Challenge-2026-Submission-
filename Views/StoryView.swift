@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Story Card Model
 
-struct StoryCard: Sendable {
+struct StoryCard {
     let emoji: String
     let title: String
     let body: String
@@ -10,7 +10,7 @@ struct StoryCard: Sendable {
     let speechText: String
     let showKidScene: KidScene
 
-    enum KidScene: Sendable {
+    enum KidScene {
         case none
         case scared       // Card 1: kid frozen at canteen counter
         case watching     // Card 2: kid watching other child lose change
@@ -24,9 +24,9 @@ private let storyCards: [StoryCard] = [
     StoryCard(
         emoji: "😰",
         title: "I Was That Kid",
-        body: "When I was little, maths was hard for me — and change calculations were the hardest part.\n\nMy dad runs a school canteen in Turkey. Standing there, watching him count coins, I'd try to follow along in my head.\n\n20 minus 13... I'd count on my fingers under the counter, hoping nobody saw.\n\nI'm not scared of it anymore. But I remember exactly what that fear felt like.",
+        body: "When I was little, maths was hard for me — and change calculations were the hardest part. Saving money felt just as impossible: I never knew if I had enough, or if I was spending too much.\n\nMy dad runs a school canteen in Turkey. Standing there, watching him count coins, I'd try to follow along in my head.\n\n20 minus 13... I'd count on my fingers under the counter, hoping nobody saw.\n\nI'm not scared of it anymore. But I remember exactly what that fear felt like.",
         accentColor: Color(red: 0.20, green: 0.50, blue: 0.90),
-        speechText: "When I was little, maths was hard for me — and change calculations were the hardest part. My dad runs a school canteen in Turkey. 20 minus 13... I'd count on my fingers under the counter, hoping nobody saw. I'm not scared of it anymore. But I remember exactly what that fear felt like.",
+        speechText: "When I was little, maths was hard for me — and change calculations were the hardest part. Saving money felt just as impossible: I never knew if I had enough, or if I was spending too much. My dad runs a school canteen in Turkey. 20 minus 13... I'd count on my fingers under the counter, hoping nobody saw. I'm not scared of it anymore. But I remember exactly what that fear felt like.",
         showKidScene: .scared
     ),
     StoryCard(
@@ -48,7 +48,7 @@ private let storyCards: [StoryCard] = [
     StoryCard(
         emoji: "🏪",
         title: "Welcome to the Canteen!",
-        body: "You have 50 coins and a whole canteen of yummy snacks waiting for you! 🥙\n\nBuy what you like, count your change, and save up for something special.\n\nEvery coin you claim back is a small victory! 🪙",
+        body: "You have 50 coins and a whole canteen of yummy snacks waiting for you! 🥙\n\nBuy what you like, count your change, and save up for something special.\n\nEvery coin you claim back is a small victory!",
         accentColor: .simitSarisi,
         speechText: "You have fifty coins and a whole canteen of yummy snacks! Buy what you like, count your change, and save up for something special!",
         showKidScene: .none
@@ -69,7 +69,6 @@ struct StoryView: View {
     @Environment(GameManager.self) private var game
     @State private var currentIndex = 0
     @State private var showDifficultyPicker = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -108,7 +107,7 @@ struct StoryView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .frame(maxHeight: 520)
-                .animation(reduceMotion ? nil : .spring(duration: 0.4, bounce: 0.1), value: currentIndex)
+                .animation(.spring(duration: 0.4, bounce: 0.1), value: currentIndex)
 
                 Spacer()
 
@@ -118,13 +117,11 @@ struct StoryView: View {
             }
         }
         .onAppear {
-            SpeechService.shared.speak(storyCards[0].speechText, rate: 0.43, pitch: 1.1)
+            SpeechService.shared.speak(storyCards[0].speechText)
         }
         .onChange(of: currentIndex) { _, newIdx in
-            if !reduceMotion {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            }
-            SpeechService.shared.speak(storyCards[newIdx].speechText, rate: 0.43, pitch: 1.1)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            SpeechService.shared.speak(storyCards[newIdx].speechText)
         }
         .sheet(isPresented: $showDifficultyPicker) {
             DifficultyPickerSheet {
@@ -160,7 +157,7 @@ struct StoryView: View {
                 } label: {
                     Label("Back", systemImage: "chevron.left")
                 }
-                .buttonStyle(.canteenSecondary)
+                .buttonStyle(SecondaryButtonStyle())
                 .accessibilityLabel("Previous page")
                 .accessibilityHint("Go back to the previous story card")
             }
@@ -181,7 +178,7 @@ struct StoryView: View {
                     Label("Let's Go!", systemImage: "storefront.fill")
                 }
             }
-            .buttonStyle(.canteenPrimary)
+            .buttonStyle(PrimaryButtonStyle())
             .accessibilityLabel(currentIndex < storyCards.count - 1 ? "Next page" : "Let's Go — start the game")
             .accessibilityHint(currentIndex < storyCards.count - 1 ? "See the next story card" : "Choose difficulty and start shopping")
         }
@@ -193,7 +190,6 @@ struct StoryView: View {
 private struct StoryCardView: View {
     let card: StoryCard
     @State private var appeared = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: CanteenSpacing.m) {
@@ -202,21 +198,15 @@ private struct StoryCardView: View {
                 KidSceneView(scene: card.showKidScene)
                     .frame(height: 90)
                     .opacity(appeared ? 1 : 0)
-                    .scaleEffect(appeared ? 1 : (reduceMotion ? 1 : 0.85))
-                    .animation(
-                        reduceMotion ? .none : .spring(duration: 0.5, bounce: 0.3).delay(0.05),
-                        value: appeared
-                    )
+                    .scaleEffect(appeared ? 1 : 0.85)
+                    .animation(.spring(duration: 0.5, bounce: 0.3).delay(0.05), value: appeared)
             } else {
                 // Emoji fallback for cards without illustration
                 Text(card.emoji)
                     .font(.system(size: 64))
-                    .scaleEffect(reduceMotion ? 1.0 : (appeared ? 1.0 : 0.4))
+                    .scaleEffect(appeared ? 1.0 : 0.4)
                     .opacity(appeared ? 1.0 : 0.0)
-                    .animation(
-                        reduceMotion ? .none : .spring(duration: 0.55, bounce: 0.50),
-                        value: appeared
-                    )
+                    .animation(.spring(duration: 0.55, bounce: 0.50), value: appeared)
             }
 
             VStack(spacing: CanteenSpacing.s) {
@@ -234,7 +224,7 @@ private struct StoryCardView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .opacity(appeared ? 1 : 0)
-            .offset(y: appeared ? 0 : (reduceMotion ? 0 : 14))
+            .offset(y: appeared ? 0 : 14)
             .animation(.easeOut(duration: 0.4).delay(0.18), value: appeared)
         }
         .padding(CanteenSpacing.xl)
@@ -244,11 +234,7 @@ private struct StoryCardView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(card.title). \(card.body)")
         .onAppear {
-            if !reduceMotion {
-                withAnimation { appeared = true }
-            } else {
-                appeared = true
-            }
+            withAnimation { appeared = true }
         }
         .onDisappear { appeared = false }
     }
@@ -312,7 +298,7 @@ private struct ScaredAtCounterScene: View {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(Color.white.opacity(0.9))
                     .frame(width: 24, height: 14)
-                Text("7🪙")
+                Text("7c")
                     .font(.system(size: 7, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.cikolataKahvesi)
             }
@@ -649,7 +635,7 @@ private struct DifficultyPickerSheet: View {
                 Label("Start at \(selected.rawValue)!", systemImage: "storefront.fill")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.canteenPrimary)
+            .buttonStyle(PrimaryButtonStyle())
             .padding(.horizontal, CanteenSpacing.l)
             .padding(.bottom, CanteenSpacing.l)
             .accessibilityLabel("Start game at \(selected.rawValue) difficulty")

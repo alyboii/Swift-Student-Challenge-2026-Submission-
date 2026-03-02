@@ -6,7 +6,6 @@ struct ChangeGameView: View {
     @Environment(GameManager.self) private var game
     @Environment(\.horizontalSizeClass) private var hSizeClass
     @Environment(\.verticalSizeClass) private var vSizeClass
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showHint = false
     @State private var hintText = ""
@@ -15,11 +14,11 @@ struct ChangeGameView: View {
 
     // MARK: - Layout Helpers
 
-    /// iPad (regular width) — portrait or landscape
+    // iPad (regular width) — portrait or landscape
     private var isIPad: Bool { hSizeClass == .regular }
-    /// iPad landscape — use two-column layout
+    // iPad landscape — use two-column layout
     private var isLandscape: Bool { hSizeClass == .regular && vSizeClass == .compact }
-    /// Coin button size — bigger on iPad for better tap targets
+    // Coin button size — bigger on iPad for better tap targets
     private var coinSize: CGFloat { isIPad ? 80 : 64 }
 
     private var shouldRevealTarget: Bool {
@@ -48,11 +47,7 @@ struct ChangeGameView: View {
 
             if game.changeResult == .correct {
                 ChangeSuccessOverlay(showHint: $showHint, showConfetti: $showConfetti)
-                    .transition(
-                        reduceMotion
-                            ? .opacity
-                            : .opacity.combined(with: .scale(scale: 0.85, anchor: .center))
-                    )
+                    .transition(.opacity)
             }
 
             ConfettiView(isActive: showConfetti, intensity: 55)
@@ -60,7 +55,7 @@ struct ChangeGameView: View {
         }
         .animation(.spring(duration: 0.45, bounce: 0.2), value: game.changeResult)
         .onChange(of: game.changeResult) { _, result in
-            if result == .correct && !reduceMotion { showConfetti = true }
+            if result == .correct { showConfetti = true }
         }
         .onAppear {
             Task {
@@ -91,7 +86,7 @@ struct ChangeGameView: View {
                 coinBank(size: 76)
 
                 if let goal = game.selectedGoal {
-                    GoalProgressPill(goal: goal, savedCoins: game.budget)
+                    GoalProgressPill(goal: goal, savedCoins: game.sessionCorrectChangeSaved)
                 }
 
                 Spacer()
@@ -116,7 +111,7 @@ struct ChangeGameView: View {
 
                 // iPad portrait: fill extra space with goal progress
                 if isIPad, let goal = game.selectedGoal {
-                    GoalProgressPill(goal: goal, savedCoins: game.budget)
+                    GoalProgressPill(goal: goal, savedCoins: game.sessionCorrectChangeSaved)
                 }
 
                 // iPad portrait: achievement grid fills remaining space
@@ -135,16 +130,8 @@ struct ChangeGameView: View {
 
     private var changeHeader: some View {
         HStack {
-            HStack(spacing: CanteenSpacing.s) {
-                Image(systemName: "cart.fill")
-                    .font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(Color.cikolataKahvesi.opacity(0.55))
-                Text("Step 2 of 3")
-                    .font(.system(.subheadline, design: .rounded, weight: .medium))
-                    .foregroundStyle(Color.cikolataKahvesi.opacity(0.55))
-            }
-            .frame(width: 90, height: 44)
-            .accessibilityLabel("Step 2 of 3: Calculate change")
+            Color.clear
+                .frame(width: 90, height: 44)
 
             Spacer()
 
@@ -165,8 +152,7 @@ struct ChangeGameView: View {
                 Text("\(game.budget)")
                     .font(.system(.subheadline, design: .rounded, weight: .bold))
                     .foregroundStyle(Color.cikolataKahvesi)
-                    .contentTransition(.numericText())
-            }
+                                }
             .padding(.horizontal, CanteenSpacing.m)
             .padding(.vertical, CanteenSpacing.s)
             .glassEffect(in: .capsule)
@@ -278,8 +264,7 @@ struct ChangeGameView: View {
                             amount: game.changeTarget,
                             font: .system(.title2, design: .rounded, weight: .bold)
                         )
-                        .contentTransition(.numericText())
-                        .animation(.spring(duration: 0.3), value: shouldRevealTarget)
+                                                .animation(.spring(duration: 0.3), value: shouldRevealTarget)
                     } else {
                         Text("???")
                             .font(.system(.title2, design: .rounded, weight: .bold))
@@ -316,8 +301,7 @@ struct ChangeGameView: View {
                     amountColor: trayTotalColor,
                     coinColor: trayTotalColor
                 )
-                .contentTransition(.numericText())
-                .animation(.spring(duration: 0.3), value: game.selectedTotal)
+                                .animation(.spring(duration: 0.3), value: game.selectedTotal)
             }
 
             if game.selectedCoins.isEmpty {
@@ -390,12 +374,10 @@ struct ChangeGameView: View {
                         }
                     }
                     .transition(
-                        reduceMotion
-                            ? .opacity
-                            : .asymmetric(
-                                insertion: .scale(scale: 0.35).combined(with: .opacity),
-                                removal: .scale(scale: 0.35).combined(with: .opacity)
-                            )
+                        .asymmetric(
+                            insertion: .scale(scale: 0.35).combined(with: .opacity),
+                            removal: .scale(scale: 0.35).combined(with: .opacity)
+                        )
                     )
                 }
             }
@@ -486,9 +468,6 @@ struct ChangeGameView: View {
 
     private var actionButtons: some View {
         VStack(spacing: CanteenSpacing.m) {
-            // Check Answer — gating evaluation behind an explicit tap is intentional:
-            // children need to consciously confirm their answer rather
-            // than having the screen change the instant the last coin lands.
             if !game.selectedCoins.isEmpty && game.changeResult != .correct {
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -497,7 +476,7 @@ struct ChangeGameView: View {
                     Label("Check Answer", systemImage: "checkmark.circle.fill")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.canteenPrimary)
+                .buttonStyle(PrimaryButtonStyle())
                 .accessibilityLabel("Check your answer")
                 .accessibilityHint("Confirm whether your coins add up to the correct change")
             }
@@ -512,7 +491,7 @@ struct ChangeGameView: View {
                     Label("Get a Hint", systemImage: "lightbulb")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.canteenSecondary)
+                .buttonStyle(SecondaryButtonStyle())
                 .accessibilityLabel("Get a hint")
                 .accessibilityHint("Shows a tip to help you calculate the correct change")
             }
@@ -529,7 +508,7 @@ struct ChangeGameView: View {
                     Label("Clear All", systemImage: "xmark.circle")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.canteenGhost)
+                .buttonStyle(GhostButtonStyle())
                 .accessibilityLabel("Clear all coins from the tray")
             }
         }
@@ -550,7 +529,7 @@ struct ChangeGameView: View {
                         Image(systemName: badge.symbol)
                             .font(.system(size: 22))
                             .foregroundStyle(badge.isUnlocked ? badge.prideAccentColor : Color.cikolataKahvesi.opacity(0.18))
-                            .symbolEffect(.wiggle.byLayer, value: badge.isUnlocked)
+                            .symbolEffect(.bounce, value: badge.isUnlocked)
                         Text(badge.title.components(separatedBy: " ").first ?? badge.title)
                             .font(.system(size: 9, weight: .medium, design: .rounded))
                             .foregroundStyle(badge.isUnlocked ? Color.cikolataKahvesi.opacity(0.65) : Color.cikolataKahvesi.opacity(0.22))

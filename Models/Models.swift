@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Product
 
-struct Product: Identifiable, Sendable, Codable {
+struct Product: Identifiable, Codable {
     let id = UUID()
     let name: String         // Turkish name: "Simit"
     let englishName: String  // English subtitle: "Sesame Ring"
@@ -37,7 +37,7 @@ struct Product: Identifiable, Sendable, Codable {
 
 // MARK: - Difficulty Level
 
-enum DifficultyLevel: String, CaseIterable, Identifiable, Sendable {
+enum DifficultyLevel: String, CaseIterable, Identifiable {
     case easy   = "Easy"
     case medium = "Medium"
     case hard   = "Hard"
@@ -60,7 +60,7 @@ enum DifficultyLevel: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Round denominations used when calculating what the player "pays" with
+    // Round denominations used when calculating what the player "pays" with
     var paymentDenominations: [Int] {
         switch self {
         case .easy:   return [5, 10, 20, 50]
@@ -74,7 +74,7 @@ enum DifficultyLevel: String, CaseIterable, Identifiable, Sendable {
 
 // MARK: - Coin Denomination
 
-enum CoinDenomination: Int, CaseIterable, Identifiable, Sendable {
+enum CoinDenomination: Int, CaseIterable, Identifiable {
     case one        = 1
     case five       = 5
     case ten        = 10
@@ -100,8 +100,7 @@ enum CoinDenomination: Int, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Ascending display size for SplashView coin row
-    /// Visual metaphor: bigger circle = more valuable  ← children read SIZE instantly
+    // size on splash screen — bigger = worth more
     var splashDisplaySize: CGFloat {
         switch self {
         case .one:    return 52
@@ -111,7 +110,7 @@ enum CoinDenomination: Int, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Ascending display size for CoinIntroView value comparison
+    // size in the coin intro row
     var introDisplaySize: CGFloat {
         switch self {
         case .one:    return 44
@@ -121,7 +120,6 @@ enum CoinDenomination: Int, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Short buying-power hint shown to children in the coin intro screen
     var buyingPowerHint: String {
         switch self {
         case .one:    return "Can't buy alone yet!"
@@ -135,7 +133,7 @@ enum CoinDenomination: Int, CaseIterable, Identifiable, Sendable {
 
 // MARK: - Purchase Record
 
-struct Purchase: Identifiable, Sendable, Codable {
+struct Purchase: Identifiable, Codable {
     let id = UUID()
     let product: Product
     let paidWith: Int    // coins paid by player
@@ -149,15 +147,14 @@ struct Purchase: Identifiable, Sendable, Codable {
 
 // MARK: - Achievement
 
-struct Achievement: Identifiable, Sendable, Codable {
+struct Achievement: Identifiable, Codable {
     let id: String
     let symbol: String   // SF Symbol name
     let title: String
     let subtitle: String
     var isUnlocked: Bool = false
 
-    /// Each achievement gets a Pride color for inclusivity
-    /// Not stored/encoded — computed from id
+    // each achievement has a different color
     var prideAccentColor: Color {
         switch id {
         case "first_purchase": return .prideRed
@@ -212,31 +209,31 @@ struct Achievement: Identifiable, Sendable, Codable {
 
 // MARK: - Change Result
 
-enum ChangeResult: Sendable, Equatable {
+enum ChangeResult: Equatable {
     case correct
     case tooMuch
 }
 
 // MARK: - Savings Goal
 
-struct SavingsGoal: Identifiable, Sendable {
+struct SavingsGoal: Identifiable {
     let id: String
     let name: String
     let emoji: String
     let cost: Int        // in Canteen Coins
 
-    /// Sessions to reach goal given coins saved per session
+    // Sessions to reach goal given coins saved per session
     func sessionsNeeded(coinsPerSession: Int) -> Int {
         guard coinsPerSession > 0 else { return 999 }
         return Int(ceil(Double(cost) / Double(coinsPerSession)))
     }
 
     static let all: [SavingsGoal] = [
-        SavingsGoal(id: "toy_car",    name: "Toy Car",    emoji: "🚗", cost: 100),
-        SavingsGoal(id: "book_set",   name: "Book Set",   emoji: "📚", cost: 60),
-        SavingsGoal(id: "puzzle",     name: "Puzzle",     emoji: "🧩", cost: 80),
-        SavingsGoal(id: "football",   name: "Football",   emoji: "⚽", cost: 120),
-        SavingsGoal(id: "art_set",    name: "Art Set",    emoji: "🎨", cost: 90),
-        SavingsGoal(id: "video_game", name: "Video Game", emoji: "🎮", cost: 150),
+        SavingsGoal(id: "toy_car",    name: "Toy Car",    emoji: "🚗", cost: 30),
+        SavingsGoal(id: "book_set",   name: "Book Set",   emoji: "📚", cost: 20),
+        SavingsGoal(id: "puzzle",     name: "Puzzle",     emoji: "🧩", cost: 25),
+        SavingsGoal(id: "football",   name: "Football",   emoji: "⚽", cost: 35),
+        SavingsGoal(id: "art_set",    name: "Art Set",    emoji: "🎨", cost: 28),
+        SavingsGoal(id: "video_game", name: "Video Game", emoji: "🎮", cost: 45),
     ]
 }

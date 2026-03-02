@@ -4,7 +4,7 @@ import SwiftData
 
 // MARK: - App Screen
 
-enum AppScreen: Sendable, Equatable {
+enum AppScreen: Equatable {
     case splash
     case story
     case goalPicker
@@ -61,6 +61,7 @@ final class GameManager {
     // MARK: Analytics (Session)
     var sessionAttempts: Int = 0       // Attempts in current game
     var sessionCorrect: Int = 0        // Correct answers in current game
+    var sessionCorrectChangeSaved: Int = 0  // Coins earned from correct change this session
 
     // MARK: Analytics (Cumulative)
     var totalAttempts: Int = 0
@@ -175,8 +176,105 @@ final class GameManager {
         AIHintService.shared.resetSession()
         sessionAttempts = 0
         sessionCorrect = 0
+        sessionCorrectChangeSaved = 0
         gamesPlayed += 1
         navigate(to: .splash)
         saveState()
+    }
+
+    // go back to canteen — keeps goal and achievements
+    func replayCanteen() {
+        budget = startingBudget
+        purchases = []
+        selectedCoins = []
+        currentProduct = nil
+        changeResult = nil
+        hintUsed = false
+        newlyUnlockedIds.removeAll()
+        aiHintText = ""
+        isGeneratingAIHint = false
+        AIHintService.shared.resetSession()
+        sessionAttempts = 0
+        sessionCorrect = 0
+        sessionCorrectChangeSaved = 0
+        gamesPlayed += 1
+        navigate(to: .canteen)
+        saveState()
+    }
+}
+
+// MARK: - SwiftData Persistence
+
+extension GameManager {
+
+    func setup(with context: ModelContext) {
+        self.modelContext = context
+        loadState()
+    }
+
+    func saveState() {
+        guard let context = modelContext else { return }
+
+        let descriptor = FetchDescriptor<GameState>()
+        let state: GameState
+        if let existing = try? context.fetch(descriptor).first {
+            state = existing
+        } else {
+            state = GameState()
+            context.insert(state)
+        }
+
+        state.budget = budget
+        state.gamesPlayed = gamesPlayed
+        state.tutorialSeen = tutorialSeen
+        state.coinIntroSeen = coinIntroSeen
+        state.unlockedAchievementIds = achievements.filter(\.isUnlocked).map(\.id)
+
+        if let data = try? JSONEncoder().encode(purchases) {
+            state.purchasesData = data
+        }
+
+        // Learning analytics
+        state.totalAttempts = totalAttempts
+        state.totalCorrectAttempts = totalCorrectAttempts
+        state.totalCorrectChangeSaved = totalCorrectChangeSaved
+        var history = sessionAccuracyHistory
+        history.append(sessionAccuracy)
+        if history.count > 10 { history = Array(history.suffix(10)) }
+        sessionAccuracyHistory = history
+        state.sessionAccuracyData = (try? JSONEncoder().encode(history)) ?? Data()
+
+        try? context.save()
+    }
+
+    func loadState() {
+        guard let context = modelContext else { return }
+
+        let descriptor = FetchDescriptor<GameState>()
+        guard let state = try? context.fetch(descriptor).first else { return }
+
+        budget = state.budget
+        gamesPlayed = state.gamesPlayed
+        tutorialSeen = state.tutorialSeen
+        coinIntroSeen = state.coinIntroSeen
+
+        // merge saved unlock states into the current achievement list
+        var merged = Achievement.all
+        let unlockedIds = Set(state.unlockedAchievementIds)
+        for i in merged.indices where unlockedIds.contains(merged[i].id) {
+            merged[i].isUnlocked = true
+        }
+        achievements = merged
+
+        if let saved = try? JSONDecoder().decode([Purchase].self, from: state.purchasesData) {
+            purchases = saved
+        }
+
+        // Learning analytics
+        totalAttempts = state.totalAttempts
+        totalCorrectAttempts = state.totalCorrectAttempts
+        totalCorrectChangeSaved = state.totalCorrectChangeSaved
+        sessionAccuracyHistory = (try? JSONDecoder().decode([Double].self,
+            from: state.sessionAccuracyData)) ?? []
     }
 }

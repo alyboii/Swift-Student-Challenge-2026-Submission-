@@ -6,7 +6,6 @@ import SwiftUI
 
 // MARK: - Helper Shapes
 
-/// Standard upward smile arc — flipped with scaleEffect(y:-1) for eyebrows, direct for smile
 struct SmileArc: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
@@ -19,7 +18,6 @@ struct SmileArc: Shape {
     }
 }
 
-/// Hoodie body — trapezoid: slightly narrower at top (shoulder slope), wider at bottom
 struct HoodieBody: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
@@ -33,7 +31,6 @@ struct HoodieBody: Shape {
     }
 }
 
-/// Lopsided grin — kept for module compatibility
 struct LopsidedSmile: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
@@ -47,7 +44,6 @@ struct LopsidedSmile: Shape {
     }
 }
 
-/// Hat crown — kept for module compatibility
 struct HatCrown: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
@@ -101,7 +97,7 @@ struct AppIconView: View {
 
             ZStack {
 
-                // Background — hierarchical green tones (HIG: use colour to signal category)
+                // green gradient background
                 LinearGradient(colors: [bgTop, bgBot], startPoint: .topLeading, endPoint: .bottomTrailing)
 
                 // Hoodie — Canvas stripes clipped to trapezoid shape
@@ -301,7 +297,6 @@ struct AppIconView: View {
                         .stroke(Color.white.opacity(0.65), lineWidth: s * 0.013)
                         .frame(width: s * 0.200)
 
-                    // SF Symbols 7: face.smiling.fill + .symbolEffect(.pulse)
                     Image(systemName: "face.smiling.fill")
                         .font(.system(size: s * 0.095))
                         .foregroundStyle(Color.white.opacity(0.92))

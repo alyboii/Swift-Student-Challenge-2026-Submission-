@@ -2,12 +2,9 @@ import SwiftUI
 import SpriteKit
 
 // MARK: - CoinIntroView
-// SwiftUI wrapper around CoinIntroScene. Shows a coin comparison row at the top
-// and a continue button after the physics demo completes.
 
 struct CoinIntroView: View {
     @Environment(GameManager.self) private var game
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var scene: CoinIntroScene? = nil
     @State private var headerVisible  = false
@@ -17,7 +14,6 @@ struct CoinIntroView: View {
 
     var body: some View {
         ZStack {
-            // Consistent MeshGradient background (matches all screens)
             CanteenMeshGradient()
 
             VStack(spacing: 0) {
@@ -30,10 +26,7 @@ struct CoinIntroView: View {
                     .offset(y: headerVisible ? 0 : 12)
                     .animation(.easeOut(duration: 0.4).delay(0.2), value: headerVisible)
 
-                // Value comparison row — ascending sizes before the physics demo
-                // Shows all four coins at ascending visual sizes BEFORE
-                // the SpriteKit demo.  Children grasp SIZE = VALUE
-                // immediately, then the physics reinforces it.
+                // coin comparison row — bigger coin = more value
                 valueComparisonRow
                     .opacity(coinRowVisible ? 1 : 0)
                     .offset(y: coinRowVisible ? 0 : 16)
@@ -54,7 +47,6 @@ struct CoinIntroView: View {
                     .accessibilityAddTraits(.allowsDirectInteraction)
                 }
 
-                // SwiftUI continue button — appears after all four beats complete
                 if showContinue {
                     Button {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -66,7 +58,7 @@ struct CoinIntroView: View {
                         Label("Let's Shop!", systemImage: "storefront.fill")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.canteenPrimary)
+                    .buttonStyle(PrimaryButtonStyle())
                     .padding(.horizontal, CanteenSpacing.l)
                     .padding(.bottom, CanteenSpacing.l)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -88,8 +80,6 @@ struct CoinIntroView: View {
     }
 
     // MARK: - Value Comparison Row
-    // Ascending sizes (introDisplaySize: 44 → 58 → 72 → 88 pt), bottom-aligned.
-    // Tap any coin → context panel with dot-count grid + real-world hint.
 
     @ViewBuilder
     private var valueComparisonRow: some View {
@@ -100,8 +90,7 @@ struct CoinIntroView: View {
                 ForEach(CoinDenomination.allCases) { coin in
                     CoinIntroCard(
                         coin: coin,
-                        isHighlighted: expandedCoin == coin,
-                        reduceMotion: reduceMotion
+                        isHighlighted: expandedCoin == coin
                     )
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
@@ -122,8 +111,7 @@ struct CoinIntroView: View {
                 }
             }
 
-            // Context panel — fixed height so the SpriteKit view doesn't jump
-            // when the panel appears / disappears.
+            // detail panel — fixed height so SpriteKit view doesn't jump
             ZStack(alignment: .top) {
                 if let coin = expandedCoin {
                     coinDetailPanel(for: coin)
@@ -145,7 +133,6 @@ struct CoinIntroView: View {
         .padding(.bottom, CanteenSpacing.s)
     }
 
-    /// Equivalence label + dot-count grid for the tapped coin.
     private func coinDetailPanel(for coin: CoinDenomination) -> some View {
         VStack(spacing: 6) {
 
@@ -172,8 +159,7 @@ struct CoinIntroView: View {
                     .foregroundStyle(Color.cikolataKahvesi.opacity(0.60))
             }
 
-            // Dot grid — 5 dots per row, colour-coded to the coin.
-            // "Count the dots!" is the most powerful pre-numeric comparison.
+            // dots to count
             CoinDotGrid(count: coin.rawValue, color: coin.coinColor)
         }
         .padding(.horizontal, CanteenSpacing.s)
@@ -222,7 +208,7 @@ struct CoinIntroView: View {
                 .foregroundStyle(Color.cikolataKahvesi)
                 .multilineTextAlignment(.center)
 
-            Text("🪙 Bigger coin = worth more! 💪")
+            Text("Bigger coin = worth more! 💪")
                 .font(.system(.title3, design: .rounded, weight: .semibold))
                 .foregroundStyle(Color.cikolataKahvesi.opacity(0.85))
                 .multilineTextAlignment(.center)
@@ -243,16 +229,15 @@ struct CoinIntroView: View {
         let s = CoinIntroScene(size: size)
         s.scaleMode    = .resizeFill
         s.backgroundColor = UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 0)
-        s.reduceMotion = reduceMotion
 
-        // When all beats complete → show SwiftUI button
+
+        // show continue button when all coins have dropped
         s.onAllBeatsComplete = {
             withAnimation(.spring(duration: 0.5, bounce: 0.2)) {
                 showContinue = true
             }
         }
 
-        // Legacy callback — no longer used for direct navigation
         s.onComplete = nil
 
         scene = s
@@ -261,21 +246,17 @@ struct CoinIntroView: View {
 }
 
 // MARK: - CoinIntroCard
-// A single coin in the ascending-size preview row.
-// introDisplaySize: 44 (1) → 58 (5) → 72 (10) → 88 (20-coin).
-// Bottom-aligned in parent HStack so smaller coins visually "stand shorter".
 
 private struct CoinIntroCard: View {
     let coin: CoinDenomination
     let isHighlighted: Bool
-    let reduceMotion: Bool
 
     var body: some View {
         VStack(spacing: 5) {
 
             ZStack {
                 // Halo glow when selected
-                if isHighlighted && !reduceMotion {
+                if isHighlighted {
                     Circle()
                         .fill(coin.coinColor.opacity(0.22))
                         .frame(
@@ -301,7 +282,7 @@ private struct CoinIntroCard: View {
                         x: 0, y: 3
                     )
                     .frame(width: coin.introDisplaySize, height: coin.introDisplaySize)
-                    .scaleEffect(isHighlighted && !reduceMotion ? 1.10 : 1.0)
+                    .scaleEffect(isHighlighted ? 1.10 : 1.0)
 
                 Text(coin.label)
                     .font(.system(
@@ -325,12 +306,7 @@ private struct CoinIntroCard: View {
 }
 
 // MARK: - CoinDotGrid
-// N dots arranged in rows of 5 — matches the "five-frame" model used in
-// early-years numeracy (Singapore Math CPA approach).
-//
-// Visual proof: the 20-coin grid has 4 rows of 5 dots.
-//               the 1-coin grid has a single dot.
-// A 6-year-old can count and COMPARE without needing to read numbers.
+// dots in rows of 5 — easy to count and compare
 
 private struct CoinDotGrid: View {
     let count: Int

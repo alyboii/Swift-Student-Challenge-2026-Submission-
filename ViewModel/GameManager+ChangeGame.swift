@@ -46,6 +46,7 @@ extension GameManager {
             sessionCorrect += 1
             totalCorrectAttempts += 1
             totalCorrectChangeSaved += changeTarget   // Social impact accumulator
+            sessionCorrectChangeSaved += changeTarget  // This session's savings
             changeResult = .correct
             HapticService.shared.correctChange()
             HapticService.shared.playCorrectSound()
